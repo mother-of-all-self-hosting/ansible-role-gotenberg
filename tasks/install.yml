@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Ensure Gotenberg paths exist
+- name: Ensure Gotenberg path exists
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -14,7 +14,6 @@
     group: "{{ gotenberg_gid }}"
   with_items:
     - "{{ gotenberg_base_path }}"
-    - "{{ gotenberg_data_path }}"
 
 - name: Ensure Gotenberg support files installed
   ansible.builtin.template:
