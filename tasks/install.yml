@@ -1,89 +1,89 @@
 # SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
-# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Ensure Apache Tika Server paths exist
+- name: Ensure Gotenberg paths exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0750"
-    owner: "{{ tika_uid }}"
-    group: "{{ tika_gid }}"
+    owner: "{{ gotenberg_uid }}"
+    group: "{{ gotenberg_gid }}"
   with_items:
-    - "{{ tika_base_path }}"
-    - "{{ tika_data_path }}"
+    - "{{ gotenberg_base_path }}"
+    - "{{ gotenberg_data_path }}"
 
-- name: Ensure Apache Tika Server support files installed
+- name: Ensure Gotenberg support files installed
   ansible.builtin.template:
     src: "{{ role_path }}/templates/{{ item }}.j2"
-    dest: "{{ tika_base_path }}/{{ item }}"
+    dest: "{{ gotenberg_base_path }}/{{ item }}"
     mode: "0640"
-    owner: "{{ tika_uid }}"
-    group: "{{ tika_gid }}"
+    owner: "{{ gotenberg_uid }}"
+    group: "{{ gotenberg_gid }}"
   with_items:
     - env
     - labels
-  register: tika_support_files_result
+  register: gotenberg_support_files_result
 
-- name: Ensure Apache Tika Server container image is pulled via community.docker.docker_image
+- name: Ensure Gotenberg container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
   community.docker.docker_image:
-    name: "{{ tika_container_image }}"
+    name: "{{ gotenberg_container_image }}"
     source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
-    force_source: "{{ tika_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
-    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else tika_container_image_force_pull }}"
-  register: tika_container_image_pull_result_ansible_module
+    force_source: "{{ gotenberg_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else gotenberg_container_image_force_pull }}"
+  register: gotenberg_container_image_pull_result_ansible_module
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: tika_container_image_pull_result_ansible_module is not failed
+  until: gotenberg_container_image_pull_result_ansible_module is not failed
 
-- name: Ensure Apache Tika Server container image is pulled via ansible.builtin.command
+- name: Ensure Gotenberg container image is pulled via ansible.builtin.command
   when: devture_systemd_docker_base_container_image_pull_method == 'command'
   ansible.builtin.command:
-    cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ tika_container_image }}"
-  register: tika_container_image_pull_result_command
+    cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ gotenberg_container_image }}"
+  register: gotenberg_container_image_pull_result_command
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: tika_container_image_pull_result_command is not failed
-  changed_when: "'Downloaded newer image' in tika_container_image_pull_result_command.stdout"
+  until: gotenberg_container_image_pull_result_command is not failed
+  changed_when: "'Downloaded newer image' in gotenberg_container_image_pull_result_command.stdout"
 
-- name: Ensure Apache Tika Server container network is created via community.docker.docker_network
+- name: Ensure Gotenberg container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
   community.docker.docker_network:
     enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
-    name: "{{ tika_container_network }}"
+    name: "{{ gotenberg_container_network }}"
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
-  register: tika_network_creation_result
+  register: gotenberg_network_creation_result
 
-- name: Ensure Apache Tika Server container network is created via ansible.builtin.command
+- name: Ensure Gotenberg container network is created via ansible.builtin.command
   when: devture_systemd_docker_base_container_network_creation_method == 'command'
   ansible.builtin.command:
     cmd: >-
       {{ devture_systemd_docker_base_host_command_docker }} network create
       {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
       {{ devture_systemd_docker_base_container_networks_driver_options_string }}
-      {{ tika_container_network }}
-  register: tika_network_creation_result
-  changed_when: tika_network_creation_result.rc == 0
-  failed_when: tika_network_creation_result.rc != 0 and 'already exists' not in tika_network_creation_result.stderr
+      {{ gotenberg_container_network }}
+  register: gotenberg_network_creation_result
+  changed_when: gotenberg_network_creation_result.rc == 0
+  failed_when: gotenberg_network_creation_result.rc != 0 and 'already exists' not in gotenberg_network_creation_result.stderr
 
-- name: Ensure Apache Tika Server systemd service is present
+- name: Ensure Gotenberg systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/tika.service.j2"
-    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ tika_identifier }}.service"
+    src: "{{ role_path }}/templates/systemd/gotenberg.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ gotenberg_identifier }}.service"
     mode: "0644"
-  register: tika_systemd_service_result
+  register: gotenberg_systemd_service_result
 
-- name: Determine whether Apache Tika Server needs a restart
+- name: Determine whether Gotenberg needs a restart
   ansible.builtin.set_fact:
-    tika_restart_necessary: >-
+    gotenberg_restart_necessary: >-
       {{
-        tika_support_files_result.changed | default(false)
-        or tika_systemd_service_result.changed | default(false)
-        or tika_container_image_pull_result_ansible_module.changed | default(false)
-        or tika_container_image_pull_result_command.changed | default(false)
+        gotenberg_support_files_result.changed | default(false)
+        or gotenberg_systemd_service_result.changed | default(false)
+        or gotenberg_container_image_pull_result_ansible_module.changed | default(false)
+        or gotenberg_container_image_pull_result_command.changed | default(false)
       }}

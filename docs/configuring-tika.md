@@ -13,56 +13,56 @@ SPDX-FileCopyrightText: 2023 Felix Stupp
 SPDX-FileCopyrightText: 2023 Julian-Samuel Gebühr
 SPDX-FileCopyrightText: 2023 Pierre 'McFly' Marty
 SPDX-FileCopyrightText: 2024 Thomas Miceli
-SPDX-FileCopyrightText: 2024, 2025 Suguru Hirahara
+SPDX-FileCopyrightText: 2024-2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# Setting up Apache Tika Server
+# Setting up Gotenberg
 
-This is an [Ansible](https://www.ansible.com/) role which installs [Apache Tika Server](https://github.com/apache/tika-docker) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [Gotenberg](https://github.com/apache/gotenberg-docker) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
-Apache Tika Server is a toolkit which detects and extracts metadata and text from different file types (such as PPT, XLS, and PDF).
+Gotenberg is a toolkit which detects and extracts metadata and text from different file types (such as PPT, XLS, and PDF).
 
-See the project's [documentation](https://cwiki.apache.org/confluence/display/tika) to learn what Apache Tika Server does and why it might be useful to you.
+See the project's [documentation](https://cwiki.apache.org/confluence/display/gotenberg) to learn what Gotenberg does and why it might be useful to you.
 
 ## Adjusting the playbook configuration
 
-To enable Apache Tika Server with this role, add the following configuration to your `vars.yml` file.
+To enable Gotenberg with this role, add the following configuration to your `vars.yml` file.
 
 **Note**: the path should be something like `inventory/host_vars/mash.example.com/vars.yml` if you use the [MASH Ansible playbook](https://github.com/mother-of-all-self-hosting/mash-playbook).
 
 ```yaml
 ########################################################################
 #                                                                      #
-# tika                                                                 #
+# gotenberg                                                            #
 #                                                                      #
 ########################################################################
 
-tika_enabled: true
+gotenberg_enabled: true
 
 ########################################################################
 #                                                                      #
-# /tika                                                                #
+# /gotenberg                                                           #
 #                                                                      #
 ########################################################################
 ```
 
 ### Exposing the instance (optional)
 
-By default, the Apache Tika Server instance is not exposed externally, as it is mainly intended to be used in the internal network, connected to other services.
+By default, the Gotenberg instance is not exposed externally, as it is mainly intended to be used in the internal network, connected to other services.
 
 To expose it to the internet, add the following configuration to your `vars.yml` file. Make sure to replace `example.com` with your own value.
 
 ```yaml
-tika_hostname: "example.com"
+gotenberg_hostname: "example.com"
 
-tika_container_labels_traefik_enabled: true
+gotenberg_container_labels_traefik_enabled: true
 ```
 
 After adjusting the hostname, make sure to adjust your DNS records to point the domain to your server.
 
-**Note**: hosting Apache Tika Server under a subpath (by configuring the `tika_path_prefix` variable) does not seem to be possible due to Apache Tika Server's technical limitations.
+**Note**: hosting Gotenberg under a subpath (by configuring the `gotenberg_path_prefix` variable) does not seem to be possible due to Gotenberg's technical limitations.
 
 ### Extending the configuration
 
@@ -70,7 +70,7 @@ There are some additional things you may wish to configure about the service.
 
 Take a look at:
 
-- [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `tika_environment_variables_additional_variables` variable
+- [`defaults/main.yml`](../defaults/main.yml) for some variables that you can customize via your `vars.yml` file. You can override settings (even those that don't have dedicated playbook variables) using the `gotenberg_environment_variables_additional_variables` variable
 
 ## Installing
 
@@ -84,7 +84,7 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 ## Usage
 
-After running the command for installation, Apache Tika Server becomes available internally to other services on the same network. If the service is exposed to the internet, it becomes available at the specified hostname like `https://example.com`.
+After running the command for installation, Gotenberg becomes available internally to other services on the same network. If the service is exposed to the internet, it becomes available at the specified hostname like `https://example.com`.
 
 See [this page](https://cwiki.apache.org/confluence/display/TIKA/TikaServer) on the documentation about its usage.
 
@@ -92,4 +92,4 @@ See [this page](https://cwiki.apache.org/confluence/display/TIKA/TikaServer) on 
 
 ### Check the service's logs
 
-You can find the logs in [systemd-journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) by logging in to the server with SSH and running `journalctl -fu tika` (or how you/your playbook named the service, e.g. `mash-tika`).
+You can find the logs in [systemd-journald](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html) by logging in to the server with SSH and running `journalctl -fu gotenberg` (or how you/your playbook named the service, e.g. `mash-gotenberg`).

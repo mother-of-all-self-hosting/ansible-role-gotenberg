@@ -1,62 +1,62 @@
 {#
 SPDX-FileCopyrightText: 2023 Slavi Pantaleev
 SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
-SPDX-FileCopyrightText: 2025 Suguru Hirahara
+SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
 
-{% if tika_container_labels_traefik_enabled %}
+{% if gotenberg_container_labels_traefik_enabled %}
 traefik.enable=true
 
-{% if tika_container_labels_traefik_docker_network %}
-traefik.docker.network={{ tika_container_labels_traefik_docker_network }}
+{% if gotenberg_container_labels_traefik_docker_network %}
+traefik.docker.network={{ gotenberg_container_labels_traefik_docker_network }}
 {% endif %}
 
 {% set middlewares = [] %}
 
-{% if tika_container_labels_traefik_path_prefix != '/' %}
-traefik.http.middlewares.{{ tika_identifier }}-slashless-redirect.redirectregex.regex=^({{ tika_container_labels_traefik_path_prefix | quote }})$
-traefik.http.middlewares.{{ tika_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
-{% set middlewares = middlewares + [tika_identifier + '-slashless-redirect'] %}
+{% if gotenberg_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ gotenberg_identifier }}-slashless-redirect.redirectregex.regex=^({{ gotenberg_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ gotenberg_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + [gotenberg_identifier + '-slashless-redirect'] %}
 {% endif %}
 
-{% if tika_container_labels_traefik_path_prefix != '/' %}
-traefik.http.middlewares.{{ tika_identifier }}-strip-prefix.stripprefix.prefixes={{ tika_container_labels_traefik_path_prefix }}
-{% set middlewares = middlewares + [tika_identifier + '-strip-prefix'] %}
+{% if gotenberg_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ gotenberg_identifier }}-strip-prefix.stripprefix.prefixes={{ gotenberg_container_labels_traefik_path_prefix }}
+{% set middlewares = middlewares + [gotenberg_identifier + '-strip-prefix'] %}
 {% endif %}
 
-{% if tika_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
-{% for name, value in tika_container_labels_traefik_additional_request_headers.items() %}
-traefik.http.middlewares.{{ tika_identifier }}-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
+{% if gotenberg_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
+{% for name, value in gotenberg_container_labels_traefik_additional_request_headers.items() %}
+traefik.http.middlewares.{{ gotenberg_identifier }}-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
 {% endfor %}
-{% set middlewares = middlewares + [tika_identifier + '-add-request-headers'] %}
+{% set middlewares = middlewares + [gotenberg_identifier + '-add-request-headers'] %}
 {% endif %}
 
-{% if tika_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
-{% for name, value in tika_container_labels_traefik_additional_response_headers.items() %}
-traefik.http.middlewares.{{ tika_identifier }}-add-response-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% if gotenberg_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in gotenberg_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.{{ gotenberg_identifier }}-add-response-headers.headers.customresponseheaders.{{ name }}={{ value }}
 {% endfor %}
-{% set middlewares = middlewares + [tika_identifier + '-add-response-headers'] %}
+{% set middlewares = middlewares + [gotenberg_identifier + '-add-response-headers'] %}
 {% endif %}
 
-traefik.http.routers.{{ tika_identifier }}.rule={{ tika_container_labels_traefik_rule }}
-{% if tika_container_labels_traefik_priority | int > 0 %}
-traefik.http.routers.{{ tika_identifier }}.priority={{ tika_container_labels_traefik_priority }}
+traefik.http.routers.{{ gotenberg_identifier }}.rule={{ gotenberg_container_labels_traefik_rule }}
+{% if gotenberg_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.{{ gotenberg_identifier }}.priority={{ gotenberg_container_labels_traefik_priority }}
 {% endif %}
-traefik.http.routers.{{ tika_identifier }}.service={{ tika_identifier }}
+traefik.http.routers.{{ gotenberg_identifier }}.service={{ gotenberg_identifier }}
 {% if middlewares | length > 0 %}
-traefik.http.routers.{{ tika_identifier }}.middlewares={{ middlewares | join(',') }}
+traefik.http.routers.{{ gotenberg_identifier }}.middlewares={{ middlewares | join(',') }}
 {% endif %}
-traefik.http.routers.{{ tika_identifier }}.entrypoints={{ tika_container_labels_traefik_entrypoints }}
-traefik.http.routers.{{ tika_identifier }}.tls={{ tika_container_labels_traefik_tls | to_json }}
-{% if tika_container_labels_traefik_tls %}
-traefik.http.routers.{{ tika_identifier }}.tls.certResolver={{ tika_container_labels_traefik_tls_certResolver }}
-{% endif %}
-
-traefik.http.services.{{ tika_identifier }}.loadbalancer.server.port={{ tika_container_http_port }}
+traefik.http.routers.{{ gotenberg_identifier }}.entrypoints={{ gotenberg_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ gotenberg_identifier }}.tls={{ gotenberg_container_labels_traefik_tls | to_json }}
+{% if gotenberg_container_labels_traefik_tls %}
+traefik.http.routers.{{ gotenberg_identifier }}.tls.certResolver={{ gotenberg_container_labels_traefik_tls_certResolver }}
 {% endif %}
 
-{% for arg in tika_container_labels_additional_labels %}
+traefik.http.services.{{ gotenberg_identifier }}.loadbalancer.server.port={{ gotenberg_container_http_port }}
+{% endif %}
+
+{% for arg in gotenberg_container_labels_additional_labels %}
 {{ arg }}
 {% endfor %}

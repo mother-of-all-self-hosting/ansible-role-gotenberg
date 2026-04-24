@@ -2,9 +2,9 @@
 galaxy_info:
   author: Suguru Hirahara
   company: progressiv
-  role_name: tika
+  role_name: gotenberg
   namespace: progressiv
-  description: Apache Tika Server
+  description: Gotenberg
   platforms:
     - name: Debian
       versions:

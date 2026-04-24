@@ -1,85 +1,85 @@
 # SPDX-FileCopyrightText: 2023, 2024 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
-# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Check existence of Apache Tika Server systemd service
+- name: Check existence of Gotenberg systemd service
   ansible.builtin.stat:
-    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ tika_identifier }}.service"
-  register: tika_service_stat
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ gotenberg_identifier }}.service"
+  register: gotenberg_service_stat
 
-- name: Uninstall Apache Tika Server systemd services and files
-  when: tika_service_stat.stat.exists | bool
+- name: Uninstall Gotenberg systemd services and files
+  when: gotenberg_service_stat.stat.exists | bool
   block:
-    - name: Ensure Apache Tika Server systemd service is stopped
+    - name: Ensure Gotenberg systemd service is stopped
       ansible.builtin.service:
-        name: "{{ tika_identifier }}"
+        name: "{{ gotenberg_identifier }}"
         state: stopped
         enabled: false
         daemon_reload: true
 
-    - name: Ensure Apache Tika Server systemd service does not exist
+    - name: Ensure Gotenberg systemd service does not exist
       ansible.builtin.file:
-        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ tika_identifier }}.service"
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ gotenberg_identifier }}.service"
         state: absent
 
-    - name: Ensure Apache Tika Server support files do not exist
+    - name: Ensure Gotenberg support files do not exist
       ansible.builtin.file:
-        path: "{{ tika_base_path }}/{{ item }}"
+        path: "{{ gotenberg_base_path }}/{{ item }}"
         state: absent
       with_items:
         - env
         - labels
 
-    - name: Ensure Apache Tika Server local data path does not exist if empty
+    - name: Ensure Gotenberg local data path does not exist if empty
       ansible.builtin.command:
-        cmd: "rmdir {{ tika_data_path }}"
-      register: tika_data_path_deletion_result
-      changed_when: tika_data_path_deletion_result.rc == 0
+        cmd: "rmdir {{ gotenberg_data_path }}"
+      register: gotenberg_data_path_deletion_result
+      changed_when: gotenberg_data_path_deletion_result.rc == 0
       failed_when: false
 
-    - name: Ensure Apache Tika Server base path does not exist if empty
+    - name: Ensure Gotenberg base path does not exist if empty
       ansible.builtin.command:
-        cmd: "rmdir {{ tika_base_path }}"
-      register: tika_base_path_deletion_result
-      changed_when: tika_base_path_deletion_result.rc == 0
+        cmd: "rmdir {{ gotenberg_base_path }}"
+      register: gotenberg_base_path_deletion_result
+      changed_when: gotenberg_base_path_deletion_result.rc == 0
       failed_when: false
 
-    - name: Ensure Apache Tika Server container network does not exist
-      when: tika_container_network_deletion_enabled
+    - name: Ensure Gotenberg container network does not exist
+      when: gotenberg_container_network_deletion_enabled
       block:
-        - name: Ensure Apache Tika Server container network does not exist via community.docker.docker_network
+        - name: Ensure Gotenberg container network does not exist via community.docker.docker_network
           when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
           community.docker.docker_network:
-            name: "{{ tika_container_network }}"
+            name: "{{ gotenberg_container_network }}"
             state: absent
-          register: tika_network_deletion_result
+          register: gotenberg_network_deletion_result
 
-        - name: Ensure Apache Tika Server container network does not exist via ansible.builtin.command
+        - name: Ensure Gotenberg container network does not exist via ansible.builtin.command
           when: devture_systemd_docker_base_container_network_creation_method == 'command'
           ansible.builtin.command:
             cmd: >-
               {{ devture_systemd_docker_base_host_command_docker }} network rm
-              {{ tika_container_network }}
-          register: tika_network_deletion_result
-          changed_when: tika_container_network in tika_network_deletion_result.stdout
+              {{ gotenberg_container_network }}
+          register: gotenberg_network_deletion_result
+          changed_when: gotenberg_container_network in gotenberg_network_deletion_result.stdout
 
-- name: Check existence of Apache Tika Server local data path
+- name: Check existence of Gotenberg local data path
   ansible.builtin.stat:
-    path: "{{ tika_data_path }}"
-  register: tika_data_path_stat
+    path: "{{ gotenberg_data_path }}"
+  register: gotenberg_data_path_stat
 
 # We just want to notify the user. Deleting data is too destructive.
 - name: Inject the message about the remaining Apache Tika Server local data path
-  when: tika_data_path_stat.stat.exists | bool
+  when: gotenberg_data_path_stat.stat.exists | bool
   ansible.builtin.set_fact:
     devture_playbook_runtime_messages_list: |
       {{
         devture_playbook_runtime_messages_list | default([])
         +
         [
-          "Note: As the local Apache Tika Server instance has been removed, some old data remains in `" + tika_data_path + "`. Feel free to delete it."
+          "Note: As the local Gotenberg instance has been removed, some old data remains in `" + gotenberg_data_path + "`. Feel free to delete it."
         ]
       }}

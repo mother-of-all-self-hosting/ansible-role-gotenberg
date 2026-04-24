@@ -1,61 +1,61 @@
 {#
 SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
-SPDX-FileCopyrightText: 2025 Suguru Hirahara
+SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
 
 [Unit]
-Description=Apache Tika Server ({{ tika_identifier }})
-{% for service in tika_systemd_required_services_list %}
+Description=Gotenberg ({{ gotenberg_identifier }})
+{% for service in gotenberg_systemd_required_services_list %}
 Requires={{ service }}
 After={{ service }}
 {% endfor %}
-{% for service in tika_systemd_wanted_services_list %}
+{% for service in gotenberg_systemd_wanted_services_list %}
 Wants={{ service }}
 {% endfor %}
 DefaultDependencies=no
 
 [Service]
 Type=simple
-ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ tika_container_cleanup_command | trim | replace("\n", " ") }}'
+ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ gotenberg_container_cleanup_command | trim | replace("\n", " ") }}'
 
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --rm \
-      --name={{ tika_identifier }} \
+      --name={{ gotenberg_identifier }} \
       --log-driver=none \
-      --user={{ tika_uid }}:{{ tika_gid }} \
+      --user={{ gotenberg_uid }}:{{ gotenberg_gid }} \
       --cap-drop=ALL \
       --read-only \
-      --network={{ tika_container_network }} \
-      {% if tika_container_http_host_bind_port %}
-      -p {{ tika_container_http_host_bind_port }}:{{ tika_container_http_port }} \
+      --network={{ gotenberg_container_network }} \
+      {% if gotenberg_container_http_host_bind_port %}
+      -p {{ gotenberg_container_http_host_bind_port }}:{{ gotenberg_container_http_port }} \
       {% endif %}
-      --env-file={{ tika_base_path }}/env  \
-      --label-file={{ tika_base_path }}/labels \
-      --mount type=bind,src={{ tika_data_path }},dst=/tika-extras \
-      {% for volume in tika_container_additional_volumes %}
+      --env-file={{ gotenberg_base_path }}/env  \
+      --label-file={{ gotenberg_base_path }}/labels \
+      --mount type=bind,src={{ gotenberg_data_path }},dst=/gotenberg-extras \
+      {% for volume in gotenberg_container_additional_volumes %}
       --mount type={{ volume.type | default('bind' if '/' in volume.src else 'volume') }},src={{ volume.src }},dst={{ volume.dst }}{{ (',' + volume.options) if volume.options | default('') else '' }} \
       {% endfor %}
-      --tmpfs=/tmp:rw,noexec,nosuid,size={{ tika_container_tmpfs_tmp_size }} \
-      {% for arg in tika_container_extra_arguments %}
+      --tmpfs=/tmp:rw,noexec,nosuid,size={{ gotenberg_container_tmpfs_tmp_size }} \
+      {% for arg in gotenberg_container_extra_arguments %}
       {{ arg }} \
       {% endfor %}
-      {{ tika_container_image }} \
-      {{ tika_process_extra_arguments | join(' ') }}
+      {{ gotenberg_container_image }} \
+      {{ gotenberg_process_extra_arguments | join(' ') }}
 
-{% for network in tika_container_additional_networks %}
-ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ tika_identifier }}
+{% for network in gotenberg_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ gotenberg_identifier }}
 {% endfor %}
 
-ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ tika_identifier }}
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ gotenberg_identifier }}
 
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ tika_identifier }} 2>/dev/null || true'
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ tika_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ gotenberg_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ gotenberg_identifier }} 2>/dev/null || true'
 
 Restart=always
 RestartSec=30
-SyslogIdentifier={{ tika_identifier }}
+SyslogIdentifier={{ gotenberg_identifier }}
 
 [Install]
 WantedBy=multi-user.target
