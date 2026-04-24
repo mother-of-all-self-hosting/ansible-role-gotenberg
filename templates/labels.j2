@@ -1,0 +1,62 @@
+{#
+SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+SPDX-FileCopyrightText: 2025 Suguru Hirahara
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+#}
+
+{% if tika_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if tika_container_labels_traefik_docker_network %}
+traefik.docker.network={{ tika_container_labels_traefik_docker_network }}
+{% endif %}
+
+{% set middlewares = [] %}
+
+{% if tika_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ tika_identifier }}-slashless-redirect.redirectregex.regex=^({{ tika_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ tika_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + [tika_identifier + '-slashless-redirect'] %}
+{% endif %}
+
+{% if tika_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ tika_identifier }}-strip-prefix.stripprefix.prefixes={{ tika_container_labels_traefik_path_prefix }}
+{% set middlewares = middlewares + [tika_identifier + '-strip-prefix'] %}
+{% endif %}
+
+{% if tika_container_labels_traefik_additional_request_headers.keys() | length > 0 %}
+{% for name, value in tika_container_labels_traefik_additional_request_headers.items() %}
+traefik.http.middlewares.{{ tika_identifier }}-add-request-headers.headers.customrequestheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [tika_identifier + '-add-request-headers'] %}
+{% endif %}
+
+{% if tika_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in tika_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.{{ tika_identifier }}-add-response-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [tika_identifier + '-add-response-headers'] %}
+{% endif %}
+
+traefik.http.routers.{{ tika_identifier }}.rule={{ tika_container_labels_traefik_rule }}
+{% if tika_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.{{ tika_identifier }}.priority={{ tika_container_labels_traefik_priority }}
+{% endif %}
+traefik.http.routers.{{ tika_identifier }}.service={{ tika_identifier }}
+{% if middlewares | length > 0 %}
+traefik.http.routers.{{ tika_identifier }}.middlewares={{ middlewares | join(',') }}
+{% endif %}
+traefik.http.routers.{{ tika_identifier }}.entrypoints={{ tika_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ tika_identifier }}.tls={{ tika_container_labels_traefik_tls | to_json }}
+{% if tika_container_labels_traefik_tls %}
+traefik.http.routers.{{ tika_identifier }}.tls.certResolver={{ tika_container_labels_traefik_tls_certResolver }}
+{% endif %}
+
+traefik.http.services.{{ tika_identifier }}.loadbalancer.server.port={{ tika_container_http_port }}
+{% endif %}
+
+{% for arg in tika_container_labels_additional_labels %}
+{{ arg }}
+{% endfor %}

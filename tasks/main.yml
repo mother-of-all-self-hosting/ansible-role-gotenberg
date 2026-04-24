@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Perform Apache Tika Server installation tasks
+  when: tika_enabled | bool
+  tags:
+    - setup-all
+    - setup-tika
+    - install-all
+    - install-tika
+  block:
+    - name: Validate Apache Tika Server configuration
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
+    - name: Install Apache Tika Server
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
+
+- name: Perform Apache Tika Server uninstallation tasks
+  when: not tika_enabled | bool
+  tags:
+    - setup-all
+    - setup-tika
+  block:
+    - name: Uninstall Apache Tika Server
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
