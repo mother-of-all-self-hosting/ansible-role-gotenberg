@@ -20,11 +20,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Setting up Gotenberg
 
-This is an [Ansible](https://www.ansible.com/) role which installs [Gotenberg](https://github.com/apache/gotenberg-docker) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [Gotenberg](https://gotenberg.dev/) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
-Gotenberg is a toolkit which detects and extracts metadata and text from different file types (such as PPT, XLS, and PDF).
+Gotenberg is a Docker-based API for converting documents to PDF.
 
-See the project's [documentation](https://cwiki.apache.org/confluence/display/gotenberg) to learn what Gotenberg does and why it might be useful to you.
+See the project's [documentation](https://gotenberg.dev/docs/getting-started/introduction) to learn what Gotenberg does and why it might be useful to you.
 
 ## Adjusting the playbook configuration
 
@@ -86,7 +86,7 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 After running the command for installation, Gotenberg becomes available internally to other services on the same network. If the service is exposed to the internet, it becomes available at the specified hostname like `https://example.com`.
 
-See [this page](https://cwiki.apache.org/confluence/display/TIKA/TikaServer) on the documentation about its usage.
+See [this page](https://gotenberg.dev/docs/convert-with-chromium/convert-url-to-pdf) on the documentation about its usage.
 
 ## Troubleshooting
 
