@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Project source code URL: https://github.com/apache/gotenberg-docker
+# Project source code URL: https://github.com/gotenberg/gotenberg
 
 gotenberg_enabled: true
 
@@ -16,7 +16,8 @@ gotenberg_identifier: gotenberg
 gotenberg_base_path: "/{{ gotenberg_identifier }}"
 gotenberg_data_path: "{{ gotenberg_base_path }}/data"
 
-gotenberg_version: 3.3.0.0
+# renovate: datasource=docker depName=gotenberg/gotenberg versioning=semver
+gotenberg_version: 8.31.0
 
 gotenberg_uid: ""
 gotenberg_gid: ""
@@ -31,8 +32,8 @@ gotenberg_hostname: ""
 # This value must either be `/` or not end with a slash (e.g. `/gotenberg`).
 gotenberg_path_prefix: /
 
-gotenberg_container_image: "{{ gotenberg_container_image_registry_prefix }}apache/gotenberg:{{ gotenberg_container_image_tag }}"
-gotenberg_container_image_tag: "{{ gotenberg_version }}-full"
+gotenberg_container_image: "{{ gotenberg_container_image_registry_prefix }}gotenberg/gotenberg:{{ gotenberg_container_image_tag }}"
+gotenberg_container_image_tag: "{{ gotenberg_version }}"
 gotenberg_container_image_registry_prefix: "{{ gotenberg_container_image_registry_prefix_upstream }}"
 gotenberg_container_image_registry_prefix_upstream: "{{ gotenberg_container_image_registry_prefix_upstream_default }}"
 gotenberg_container_image_registry_prefix_upstream_default: docker.io/
