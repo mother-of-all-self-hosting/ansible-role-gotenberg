@@ -16,7 +16,7 @@ gotenberg_identifier: gotenberg
 gotenberg_base_path: "/{{ gotenberg_identifier }}"
 
 # renovate: datasource=docker depName=gotenberg/gotenberg versioning=semver
-gotenberg_version: 8.31.0
+gotenberg_version: 8.32.0
 
 gotenberg_uid: ""
 gotenberg_gid: ""
