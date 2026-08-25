@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023, 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
 # SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
@@ -23,6 +23,9 @@
     - gotenberg_uid
     - gotenberg_gid
     - gotenberg_container_network
+    # An empty value here would put a bare `HOME=` into the environment file, leaving Chromium
+    # without a writable home directory just as surely as not setting it at all would.
+    - gotenberg_environment_variables_home
 
 - name: Run if Traefik is enabled
   when: gotenberg_container_labels_traefik_enabled | bool

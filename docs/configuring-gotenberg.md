@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2020 Chris van Dijk
 SPDX-FileCopyrightText: 2020 Dominik Zajac
 SPDX-FileCopyrightText: 2020 Mickaël Cornière
 SPDX-FileCopyrightText: 2020-2024 MDAD project contributors
-SPDX-FileCopyrightText: 2020-2024 Slavi Pantaleev
+SPDX-FileCopyrightText: 2020-2024, 2026 Slavi Pantaleev
 SPDX-FileCopyrightText: 2022 François Darveau
 SPDX-FileCopyrightText: 2022 Julian Foad
 SPDX-FileCopyrightText: 2022 Warren Bailey
@@ -89,6 +89,19 @@ After running the command for installation, Gotenberg becomes available internal
 See [this page](https://gotenberg.dev/docs/convert-with-chromium/convert-url-to-pdf) on the documentation about its usage.
 
 ## Troubleshooting
+
+### Chromium-backed conversions fail with `500 Internal Server Error`
+
+If `/forms/chromium/convert/html` (or any other Chromium-backed route — HTML, Markdown and URL conversion, and the e-mail conversion which Paperless-ngx performs through Tika) answers `500 Internal Server Error` while `/forms/libreoffice/convert` keeps working, look for this in the service's logs:
+
+```text
+chrome failed to start:
+chrome_crashpad_handler: --database is required
+```
+
+Chromium keeps its user data directory below the home directory of the user it runs as, and this role runs the container with a read-only root filesystem. `gotenberg_environment_variables_home` therefore has to point at a writable path. It defaults to `/tmp`, which the role mounts as a tmpfs; if you have overridden it, make sure the path is writable by `gotenberg_uid`.
+
+Note that `/health` reports Chromium as `up` throughout — it does not run a conversion. Only an actual conversion tells you whether the service works.
 
 ### Check the service's logs
 

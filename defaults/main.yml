@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2023, 2024 Nikita Chernyi
-# SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2023-2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
 # SPDX-FileCopyrightText: 2024 Sergio Durigan Junior
 # SPDX-FileCopyrightText: 2025 MASH project contributors
@@ -224,6 +224,30 @@ gotenberg_container_cleanup_command: |
 
 # Specify the timezone
 gotenberg_environment_variables_tz: UTC
+
+# Specifies the home directory of the Gotenberg process.
+#
+# Chromium keeps its user data directory below the home directory of the user it runs as, so that
+# directory has to be writable. Neither of the home directories the container would otherwise end
+# up with is:
+#
+# - the container image ships a `gotenberg` user with uid/gid 1001 whose home directory is
+#   `/home/gotenberg`, which the container's `--read-only` root filesystem makes unwritable;
+# - with any other uid (`gotenberg_uid`) there is no matching `/etc/passwd` entry in the image, so
+#   the container runtime falls back to `HOME=/`, which the read-only root filesystem also makes
+#   unwritable. This is what every mash-playbook deployment ends up with, since the playbook passes
+#   the uid of its own service user.
+#
+# Chromium then fails to lay itself out and every Chromium-backed conversion (`/forms/chromium/*`,
+# and therefore HTML, Markdown, URL and - through Tika/Paperless-ngx - e-mail conversion) answers
+# `500 Internal Server Error`, with `chrome_crashpad_handler: --database is required` in the log.
+# LibreOffice-backed conversions are unaffected and `/health` keeps reporting Chromium as `up`,
+# which is what let this go unnoticed.
+#
+# Pointing the home directory at the writable tmpfs which this role already mounts on `/tmp` (see
+# `gotenberg_container_tmpfs_tmp_size`) avoids all of it. If you point it somewhere else, make sure
+# it is writable by `gotenberg_uid`.
+gotenberg_environment_variables_home: /tmp
 
 # Additional environment variables.
 gotenberg_environment_variables_additional_variables: ""
