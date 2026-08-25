@@ -126,6 +126,18 @@ gotenberg_container_extra_arguments: "{{ gotenberg_container_extra_arguments_aut
 gotenberg_container_extra_arguments_auto: []
 gotenberg_container_extra_arguments_custom: []
 
+# The command that the container image is asked to run.
+#
+# Arguments passed to the container replace the image's own command (`CMD ["gotenberg"]`) rather
+# than being appended to it, so the command name has to be repeated in front of them. Without it,
+# the container exits immediately with:
+#
+#   [FATAL tini (7)] exec --some-argument failed: No such file or directory
+#
+# This value is only used when `gotenberg_process_extra_arguments` is non-empty; otherwise the
+# image's own command is left alone.
+gotenberg_container_command: gotenberg
+
 # A list of extra arguments to pass to the Gotenberg process
 # Example: ['--SOME_ARGUMENT']
 gotenberg_process_extra_arguments: "{{ gotenberg_process_extra_arguments_auto + gotenberg_process_extra_arguments_custom }}"

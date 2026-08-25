@@ -1,6 +1,7 @@
 {#
 SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
 SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
+SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
@@ -41,7 +42,10 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       {{ arg }} \
       {% endfor %}
       {{ gotenberg_container_image }} \
-      {{ gotenberg_process_extra_arguments | join(' ') }}
+      {% if gotenberg_process_extra_arguments %}
+      {# Arguments replace the image's own command instead of extending it, so it is repeated here. #}
+      {{ gotenberg_container_command }} {{ gotenberg_process_extra_arguments | join(' ') }}
+      {% endif %}
 
 {% for network in gotenberg_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ gotenberg_identifier }}
