@@ -3,7 +3,7 @@ galaxy_info:
   author: Suguru Hirahara
   company: progressiv
   role_name: gotenberg
-  namespace: progressiv
+  namespace: mash
   description: Gotenberg
   platforms:
     - name: Debian
