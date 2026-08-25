@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+SPDX-FileCopyrightText: 2023, 2026 Slavi Pantaleev
 SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
 SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 
@@ -36,3 +36,9 @@ just prek-install-git-pre-commit-hook
 This role supports [Molecule](https://docs.ansible.com/projects/molecule/), an Ansible testing framework designed for developing and testing Ansible collections, playbooks, and roles.
 
 Refer to [this page](./molecule/README.md) for details about how to utilize it.
+
+### Releases
+
+Release tags (`v<Gotenberg version>-<release>`) are cut automatically by the [autotag workflow](./.github/workflows/autotag.yml), derived from the state of the repository rather than from commit messages. [`bin/compute-next-tag.sh`](./bin/compute-next-tag.sh) reads the Gotenberg version out of [`defaults/main.yml`](./defaults/main.yml) and compares it against the tags that already exist: a version that has never been released starts at `-0`, and any other change under `defaults/`, `meta/`, `tasks/` or `templates/` increments the counter. Changes that cannot affect a playbook run — documentation, CI configuration, the Molecule scenario — release nothing.
+
+Because the result is derived from the repository rather than from the order in which pull requests were merged, pull requests are safe to merge in any order. [`bin/test-compute-next-tag.sh`](./bin/test-compute-next-tag.sh) exercises the computation against throwaway repositories, and runs as a pre-commit hook whenever the version or either script changes.
