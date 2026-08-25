@@ -1,6 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Patch releases of Gotenberg are automerged here. Gotenberg is a stateless HTTP conversion API: it owns no database and no schema, and this role gives its container no persistent storage at all - the only writable mount is a tmpfs on /tmp, discarded on every restart. A patch bump therefore cannot carry a data migration, because there is no data for one to migrate.",
+    "Measured rather than assumed: all 15 patch releases the 8.x line has published (v8.14.1, v8.15.1, v8.15.2, v8.15.3, v8.17.1, v8.17.2, v8.17.3, v8.19.1, v8.20.1, v8.21.1, v8.23.1, v8.23.2, v8.25.1, v8.29.1, v8.30.1) were read. Every one of them is a bug fix, a bundled Chromium/LibreOffice refresh or a Go dependency update; not one changes the API or removes a capability. Two of them - v8.23.2 undoing a UPX build change and v8.30.1 restoring the cURL binary - are themselves repairs of regressions that shipped in the minor release before them, which is exactly why minor and major bumps remain human-reviewed pull requests.",
+    "The automerge branch is covered by the Molecule run, which does more than watch the unit turn active. It installs the service the way a mash-playbook deployment has it, under a uid override and a read-only container root, and then asks Gotenberg to convert documents for real through both of its engines - Chromium and LibreOffice - checking the responses for PDF magic bytes. It also asserts that the running Gotenberg reports the version defaults/main.yml pins, that the arguments the role renders reach the process, and that the role's environment file does too. A patch bump that broke startup, either conversion engine, or the version surface fails there before it can merge. That matters more here than usual: Gotenberg's /health route reports both engines as up without ever running a conversion, and did so throughout the period in which every Chromium-backed conversion answered 500.",
+    "versioning=semver on the annotation in defaults/main.yml is what keeps the noise out of that decision. Of the 466 tags gotenberg/gotenberg publishes, strict semver leaves only the 100 real X.Y.Z releases: the 174 flavoured tags (-chromium, -libreoffice, -cloudrun, -aws-lambda and their combinations) parse as prereleases and are skipped as unstable, while the 50 floating 8 and 8.36 tags and the 18 latest/edge variants are not versions at all."
+  ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.0.0",
+    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.0.0"
   ]
 }
