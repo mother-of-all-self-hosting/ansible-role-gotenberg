@@ -50,7 +50,13 @@ gotenberg_container_network_deletion_enabled: true
 gotenberg_container_http_host_bind_port: ""
 
 # The port number in the container
+#
+# The role passes this on to the Gotenberg process (via `--api-port`, see
+# `gotenberg_process_extra_arguments_auto`) whenever it differs from Gotenberg's own default of
+# 3000, so that changing it moves the listening socket instead of merely re-pointing the port
+# publishing at a port that nothing listens on.
 gotenberg_container_http_port: 3000
+gotenberg_container_http_port_upstream_default: 3000
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
@@ -141,7 +147,9 @@ gotenberg_container_command: gotenberg
 # A list of extra arguments to pass to the Gotenberg process
 # Example: ['--SOME_ARGUMENT']
 gotenberg_process_extra_arguments: "{{ gotenberg_process_extra_arguments_auto + gotenberg_process_extra_arguments_custom }}"
-gotenberg_process_extra_arguments_auto: []
+# Kept empty while `gotenberg_container_http_port` is at Gotenberg's own default, so that the usual
+# deployment leaves the image's command untouched. See `gotenberg_container_command`.
+gotenberg_process_extra_arguments_auto: "{{ ['--api-port=' + (gotenberg_container_http_port | string)] if (gotenberg_container_http_port | int) != (gotenberg_container_http_port_upstream_default | int) else [] }}"
 gotenberg_process_extra_arguments_custom: []
 
 # Specifies the value of the `X-XSS-Protection` header
