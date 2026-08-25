@@ -47,7 +47,15 @@ Currently there is one testing scenario available.
 
 ### `default`
 
-Tests a standard Gotenberg installation.
+Tests a standard Gotenberg installation, and in particular that it actually converts documents.
+
+Gotenberg's `/health` route reports both of its conversion engines as `up` without ever running a conversion, so this scenario does not stop at a reachable endpoint. It installs the service under a uid override and a read-only container root — the shape that every mash-playbook deployment has — and then asserts that:
+
+- both conversion engines produce real PDF documents: `/forms/chromium/convert/html` and `/forms/libreoffice/convert` are each handed an input file, and their responses are checked for PDF magic bytes and a plausible size
+- the running Gotenberg reports the version that `defaults/main.yml` pins
+- the arguments that the role renders reach the process — the API is served only below the configured root path, and the unprefixed routes answer `404`
+- the role's environment file reaches the process, including the `HOME` that keeps Chromium working on a read-only container root
+- the container really does run under the overridden uid with a read-only root filesystem, so that the Chromium check above cannot quietly stop being a regression test
 
 ## Running
 

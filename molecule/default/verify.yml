@@ -1,14 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+# Gotenberg's `/health` route reports Chromium and LibreOffice as `up` without ever running a
+# conversion. It stayed green throughout the period in which every Chromium-backed conversion
+# answered `500 Internal Server Error` because the container had no writable home directory.
+# Nothing below treats a reachable endpoint as proof of a working deployment: the service is asked
+# to produce actual PDF documents, through both of its conversion engines.
+
 ---
-- name: Verify Gotenberg systemd service
+- name: Verify Gotenberg
   hosts: all
   become: true
   gather_facts: false
+
+  vars:
+    gotenberg_molecule_host: "http://localhost:{{ gotenberg_container_http_port }}"
+    gotenberg_molecule_base_url: "http://localhost:{{ gotenberg_container_http_port }}/mash-molecule"
+    gotenberg_molecule_work_path: /tmp/gotenberg-molecule
+
   tasks:
+    - name: Read the Gotenberg role's own defaults
+      # Loaded under a name of its own on purpose. These are the values the role describes itself
+      # with (most importantly the version that Renovate bumps), and they must not overrule the
+      # values that this scenario tunes in its group_vars.
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: gotenberg_role_defaults
+
     - name: Wait for Gotenberg service to become active (up to 180s)
       ansible.builtin.systemd:
         name: gotenberg.service
@@ -17,6 +38,8 @@
       retries: 36
       delay: 5
 
+    # `Restart=always` makes systemd report a crash-looping container as active, so this only rules
+    # out "never started at all". Everything below is what actually proves the deployment.
     - name: Assert Gotenberg service is active
       ansible.builtin.assert:
         that: gotenberg_service.status.ActiveState == 'active'
@@ -29,25 +52,186 @@
         cmd: journalctl -xeu gotenberg.service
       changed_when: false
 
-    - name: Wait for Gotenberg HTTP endpoint to respond (up to 10m)
+    - name: Wait for Gotenberg HTTP endpoint to respond (up to 5m)
       ansible.builtin.uri:
-        url: "http://localhost:3000/health"  # cf. https://gotenberg.dev/docs/system/head-health-check
+        url: "{{ gotenberg_molecule_base_url }}/health"  # cf. https://gotenberg.dev/docs/system/head-health-check
         method: GET
-        status_code: [200, 302]
+        status_code: [200]
         follow_redirects: none
-      register: gotenberg_endpoint
-      until: gotenberg_endpoint.status in [200, 302]
-      retries: 120
+      register: gotenberg_health
+      until: gotenberg_health.status == 200
+      retries: 60
       delay: 5
 
-    - name: Assert Gotenberg HTTP endpoint responds
+    - name: Assert Gotenberg reports itself as up
       ansible.builtin.assert:
-        that: gotenberg_endpoint.status in [200, 302]
-        fail_msg: "Gotenberg did not respond as expected ({{ gotenberg_endpoint.status | default('no response') }})"
-        success_msg: "Gotenberg responded with {{ gotenberg_endpoint.status }}"
+        that: gotenberg_health.json.status == 'up'
+        fail_msg: "Gotenberg reports itself as {{ gotenberg_health.json.status | default('unknown') }}"
+        success_msg: "Gotenberg reports itself as up"
 
-    - name: Show Gotenberg systemd service status summary
+    # Negative control for the check above. Reaching the service under the prefix means little
+    # unless the unprefixed route is gone, because that is what distinguishes a Gotenberg configured
+    # by this role from a Gotenberg that ignored everything the role passed it.
+    - name: Request the health route without the root path the role configured
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_host }}/health"
+        method: GET
+        status_code: [404]
+        follow_redirects: none
+      register: gotenberg_unprefixed_health
+
+    - name: Assert Gotenberg honours the process arguments the role renders
+      ansible.builtin.assert:
+        that: gotenberg_unprefixed_health.status == 404
+        fail_msg: >-
+          Gotenberg answered the unprefixed health route with
+          {{ gotenberg_unprefixed_health.status }}, so `--api-root-path` from
+          `gotenberg_process_extra_arguments` never reached the process and this run proves nothing
+          about the role's process arguments.
+        success_msg: "Only the role-configured root path serves the API"
+
+    - name: Retrieve the running Gotenberg version
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_base_url }}/version"
+        method: GET
+        status_code: [200]
+        follow_redirects: none
+        return_content: true
+      register: gotenberg_version_response
+
+    - name: Assert the running Gotenberg is the version the role pins
+      ansible.builtin.assert:
+        that: gotenberg_version_response.content | trim == gotenberg_role_defaults.gotenberg_version
+        fail_msg: >-
+          Gotenberg reports version {{ gotenberg_version_response.content | trim }}, but
+          defaults/main.yml pins {{ gotenberg_role_defaults.gotenberg_version }}.
+        success_msg: "Gotenberg runs {{ gotenberg_version_response.content | trim }}, the version defaults/main.yml pins"
+
+    # `docker container inspect` rather than `docker inspect`, which would happily fall back to the
+    # container network of the same name and describe that instead when the container is gone.
+    - name: Inspect the Gotenberg container
+      ansible.builtin.command:
+        cmd: docker container inspect gotenberg
+      changed_when: false
+      register: gotenberg_container_inspect
+
+    # The conversion checks further down are only meaningful while the container still runs under a
+    # uid that has no /etc/passwd entry in the image and with a read-only root filesystem. Were a
+    # future change to relax either of those, the Chromium regression this scenario guards would
+    # stop being reachable and the suite would go on passing for the wrong reason.
+    - name: Assert the Gotenberg container runs under the conditions that broke Chromium
+      vars:
+        gotenberg_molecule_container: "{{ (gotenberg_container_inspect.stdout | from_json)[0] }}"
+      ansible.builtin.assert:
+        that:
+          - gotenberg_molecule_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
+          - gotenberg_molecule_container.HostConfig.ReadonlyRootfs | bool
+        fail_msg: >-
+          The container does not run with the uid override and read-only root filesystem that this
+          scenario relies on (user={{ gotenberg_molecule_container.Config.User }},
+          read-only={{ gotenberg_molecule_container.HostConfig.ReadonlyRootfs }}).
+        success_msg: "The container runs as {{ gotenberg_molecule_container.Config.User }} with a read-only root filesystem"
+
+    - name: Read the environment of the Gotenberg process
+      ansible.builtin.command:
+        cmd: docker exec gotenberg printenv TZ HOME
+      changed_when: false
+      register: gotenberg_container_environment
+
+    - name: Assert the role's environment file reached the Gotenberg process
+      ansible.builtin.assert:
+        that:
+          - gotenberg_container_environment.stdout_lines[0] == gotenberg_environment_variables_tz
+          - gotenberg_container_environment.stdout_lines[1] == gotenberg_role_defaults.gotenberg_environment_variables_home
+        fail_msg: >-
+          The Gotenberg process environment is {{ gotenberg_container_environment.stdout_lines }},
+          not the TZ={{ gotenberg_environment_variables_tz }} and
+          HOME={{ gotenberg_role_defaults.gotenberg_environment_variables_home }} that the role's
+          environment file renders.
+        success_msg: "The role's environment file reached the Gotenberg process"
+
+    - name: Ensure the Gotenberg conversion output directory exists
+      ansible.builtin.file:
+        path: "{{ gotenberg_molecule_work_path }}"
+        state: directory
+        mode: "0755"
+
+    # This is the regression test for the read-only home directory: without a writable HOME the
+    # request comes back as 500, while systemd, `/health` and the LibreOffice route below all stay
+    # green.
+    #
+    # The uploaded content is inlined rather than read from a file, because `form-multipart` resolves
+    # file paths on the Ansible controller, while everything else here happens on the host.
+    # Chromium's HTML route insists on the uploaded file being named index.html.
+    - name: Convert HTML to PDF through Chromium
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_base_url }}/forms/chromium/convert/html"
+        method: POST
+        body_format: form-multipart
+        body:
+          files:
+            content: "<!doctype html><html><body><h1>Gotenberg Molecule probe</h1></body></html>"
+            filename: index.html
+            mime_type: text/html
+        status_code: [200]
+        follow_redirects: none
+        dest: "{{ gotenberg_molecule_work_path }}/chromium.pdf"
+      changed_when: false
+
+    - name: Convert a document to PDF through LibreOffice
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_base_url }}/forms/libreoffice/convert"
+        method: POST
+        body_format: form-multipart
+        body:
+          files:
+            content: "Gotenberg Molecule probe"
+            filename: probe.txt
+            mime_type: text/plain
+        status_code: [200]
+        follow_redirects: none
+        dest: "{{ gotenberg_molecule_work_path }}/libreoffice.pdf"
+      changed_when: false
+
+    - name: Read the first bytes of the converted documents
+      ansible.builtin.command:
+        cmd: head -c 5 {{ gotenberg_molecule_work_path }}/{{ item }}.pdf
+      changed_when: false
+      register: gotenberg_pdf_magic
+      loop:
+        - chromium
+        - libreoffice
+
+    - name: Measure the converted documents
+      ansible.builtin.stat:
+        path: "{{ gotenberg_molecule_work_path }}/{{ item }}.pdf"
+      register: gotenberg_pdf_stat
+      loop:
+        - chromium
+        - libreoffice
+
+    - name: Assert both conversion engines produced real PDF documents
+      ansible.builtin.assert:
+        that:
+          - gotenberg_pdf_magic.results[0].stdout == '%PDF-'
+          - gotenberg_pdf_magic.results[1].stdout == '%PDF-'
+          - gotenberg_pdf_stat.results[0].stat.size > 1000
+          - gotenberg_pdf_stat.results[1].stat.size > 1000
+        fail_msg: >-
+          Chromium produced {{ gotenberg_pdf_stat.results[0].stat.size }} bytes starting with
+          '{{ gotenberg_pdf_magic.results[0].stdout }}' and LibreOffice produced
+          {{ gotenberg_pdf_stat.results[1].stat.size }} bytes starting with
+          '{{ gotenberg_pdf_magic.results[1].stdout }}'; both were expected to be PDF documents.
+        success_msg: >-
+          Chromium produced a {{ gotenberg_pdf_stat.results[0].stat.size }} byte PDF and LibreOffice
+          produced a {{ gotenberg_pdf_stat.results[1].stat.size }} byte PDF
+
+    - name: Show Gotenberg verification summary
       ansible.builtin.debug:
         msg:
           - "Gotenberg systemd: {{ gotenberg_service.status.ActiveState }}"
-          - "Gotenberg HTTP: {{ gotenberg_endpoint.status }}"
+          - "Gotenberg version: {{ gotenberg_version_response.content | trim }}"
+          - "Gotenberg root path: only {{ gotenberg_molecule_base_url }} serves the API"
+          - "Gotenberg environment: TZ={{ gotenberg_container_environment.stdout_lines[0] }} HOME={{ gotenberg_container_environment.stdout_lines[1] }}"
+          - "Gotenberg Chromium PDF: {{ gotenberg_pdf_stat.results[0].stat.size }} bytes"
+          - "Gotenberg LibreOffice PDF: {{ gotenberg_pdf_stat.results[1].stat.size }} bytes"

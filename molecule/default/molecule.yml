@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
@@ -32,13 +33,34 @@ provisioner:
         gotenberg_debug_service_enabled: false
 
         # Variables for Gotenberg
+
+        # Deliberately not 1001, which is the uid of the `gotenberg` user that the container image
+        # ships. Any other uid has no /etc/passwd entry in the image, so the container runtime falls
+        # back to `HOME=/` - which, together with the read-only container root, leaves Chromium
+        # without a writable user data directory unless the role sets HOME itself. This is also the
+        # shape of every mash-playbook deployment, which passes the uid of its own service user.
         gotenberg_uid: 1000
         gotenberg_gid: 1000
+
         gotenberg_scheme: http
         gotenberg_hostname: localhost
         gotenberg_container_labels_traefik_enabled: false
-        gotenberg_container_http_host_bind_port: 3000
-        gotenberg_environment_variables_api_key: secret
+
+        # Deliberately not Gotenberg's own default of 3000: being able to reach the service on this
+        # port at all proves that the role moved the listening socket (`--api-port`) and not merely
+        # the port publishing.
+        gotenberg_container_http_port: 3100
+        gotenberg_container_http_host_bind_port: 3100
+
+        # A timezone that neither the image nor a distribution would arrive at on its own, so that
+        # finding it in the process environment can only mean the role's environment file produced
+        # it.
+        gotenberg_environment_variables_tz: Pacific/Kiritimati
+
+        # Moves every route below /mash-molecule/, which lets the verification prove that arguments
+        # rendered by the role reach the Gotenberg process: the unprefixed routes must answer 404.
+        gotenberg_process_extra_arguments_custom:
+          - --api-root-path=/mash-molecule/
   env:
     # Workaround for https://github.com/ansible/molecule/issues/4391
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
