@@ -7,7 +7,7 @@
     "versioning=semver on the annotation in defaults/main.yml is what keeps the noise out of that decision. Of the 466 tags gotenberg/gotenberg publishes, strict semver leaves only the 100 real X.Y.Z releases: the 174 flavoured tags (-chromium, -libreoffice, -cloudrun, -aws-lambda and their combinations) parse as prereleases and are skipped as unstable, while the 50 floating 8 and 8.36 tags and the 18 latest/edge variants are not versions at all."
   ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0",
-    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.1.0",
+    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.1.0"
   ]
 }
