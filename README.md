@@ -39,6 +39,6 @@ Refer to [this page](./molecule/README.md) for details about how to utilize it.
 
 ### Releases
 
-Release tags (`v<Gotenberg version>-<release>`) are cut automatically by the [autotag workflow](./.github/workflows/autotag.yml), derived from the state of the repository rather than from commit messages. [`bin/compute-next-tag.sh`](./bin/compute-next-tag.sh) reads the Gotenberg version out of [`defaults/main.yml`](./defaults/main.yml) and compares it against the tags that already exist: a version that has never been released starts at `-0`, and any other change under `defaults/`, `meta/`, `tasks/` or `templates/` increments the counter. Changes that cannot affect a playbook run — documentation, CI configuration, the Molecule scenario — release nothing.
+Tags are created by [`.github/workflows/autotag.yml`](.github/workflows/autotag.yml), which asks [`bin/compute-next-tag.sh`](bin/compute-next-tag.sh) what the commit on `main` should be released as. The answer comes from the DokuWiki version pinned in [`defaults/main.yml`](defaults/main.yml) and from the tags that already exist, so a commit that only touches documentation or CI is not released at all, and any change to the role itself is — without waiting for a dependency bump to carry it along.
 
-Because the result is derived from the repository rather than from the order in which pull requests were merged, pull requests are safe to merge in any order. [`bin/test-compute-next-tag.sh`](./bin/test-compute-next-tag.sh) exercises the computation against throwaway repositories, and runs as a pre-commit hook whenever the version or either script changes.
+[`bin/test-compute-next-tag.sh`](bin/test-compute-next-tag.sh) exercises that script against throwaway repositories, and runs as a prek hook.
