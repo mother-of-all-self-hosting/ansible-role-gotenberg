@@ -224,7 +224,7 @@
           Chromium produced a {{ gotenberg_pdf_stat.results[0].stat.size }} byte PDF and LibreOffice
           produced a {{ gotenberg_pdf_stat.results[1].stat.size }} byte PDF
 
-    - name: Show Gotenberg verification summary
+    - name: Show the Gotenberg verification summary
       ansible.builtin.debug:
         msg:
           - "Gotenberg systemd: {{ gotenberg_service.status.ActiveState }}"
