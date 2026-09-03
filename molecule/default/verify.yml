@@ -99,13 +99,11 @@
         return_content: true
       register: gotenberg_version_response
 
-    - name: Assert the running Gotenberg is the version the role pins
+    - name: Assert the running Gotenberg is the version this role installs
       ansible.builtin.assert:
         that: gotenberg_version_response.content | trim == gotenberg_role_defaults.gotenberg_version
-        fail_msg: >-
-          Gotenberg reports version {{ gotenberg_version_response.content | trim }}, but
-          defaults/main.yml pins {{ gotenberg_role_defaults.gotenberg_version }}.
-        success_msg: "Gotenberg runs {{ gotenberg_version_response.content | trim }}, the version defaults/main.yml pins"
+        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_role_defaults.gotenberg_version }}"
+        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
 
     # `docker container inspect` rather than `docker inspect`, which would happily fall back to the
     # container network of the same name and describe that instead when the container is gone.
