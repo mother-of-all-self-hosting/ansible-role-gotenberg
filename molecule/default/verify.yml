@@ -22,13 +22,13 @@
     gotenberg_molecule_work_path: /tmp/gotenberg-molecule
 
   tasks:
-    - name: Read the Gotenberg role's own defaults
-      # Loaded under a name of its own on purpose. These are the values the role describes itself
-      # with (most importantly the version that Renovate bumps), and they must not overrule the
-      # values that this scenario tunes in its group_vars.
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
+    - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
-        name: gotenberg_role_defaults
+        name: gotenberg_defaults
 
     - name: Wait for Gotenberg service to become active (up to 180s)
       ansible.builtin.systemd:
@@ -101,8 +101,8 @@
 
     - name: Assert the running Gotenberg is the version this role installs
       ansible.builtin.assert:
-        that: gotenberg_version_response.content | trim == gotenberg_role_defaults.gotenberg_version
-        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_role_defaults.gotenberg_version }}"
+        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
+        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
         success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
 
     # `docker container inspect` rather than `docker inspect`, which would happily fall back to the
@@ -140,11 +140,11 @@
       ansible.builtin.assert:
         that:
           - gotenberg_container_environment.stdout_lines[0] == gotenberg_environment_variables_tz
-          - gotenberg_container_environment.stdout_lines[1] == gotenberg_role_defaults.gotenberg_environment_variables_home
+          - gotenberg_container_environment.stdout_lines[1] == gotenberg_defaults.gotenberg_environment_variables_home
         fail_msg: >-
           The Gotenberg process environment is {{ gotenberg_container_environment.stdout_lines }},
           not the TZ={{ gotenberg_environment_variables_tz }} and
-          HOME={{ gotenberg_role_defaults.gotenberg_environment_variables_home }} that the role's
+          HOME={{ gotenberg_defaults.gotenberg_environment_variables_home }} that the role's
           environment file renders.
         success_msg: "The role's environment file reached the Gotenberg process"
 
