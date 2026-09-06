@@ -69,6 +69,21 @@
         fail_msg: "Gotenberg reports itself as {{ gotenberg_health.json.status | default('unknown') }}"
         success_msg: "Gotenberg reports itself as up"
 
+    - name: Query the version of the running Gotenberg
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_base_url }}/version"
+        method: GET
+        status_code: [200]
+        follow_redirects: none
+        return_content: true
+      register: gotenberg_version_response
+
+    - name: Assert the running Gotenberg is the version this role installs
+      ansible.builtin.assert:
+        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
+        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
+        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
+
     # Negative control for the check above. Reaching the service under the prefix means little
     # unless the unprefixed route is gone, because that is what distinguishes a Gotenberg configured
     # by this role from a Gotenberg that ignored everything the role passed it.
@@ -89,21 +104,6 @@
           `gotenberg_process_extra_arguments` never reached the process and this run proves nothing
           about the role's process arguments.
         success_msg: "Only the role-configured root path serves the API"
-
-    - name: Query the version of the running Gotenberg
-      ansible.builtin.uri:
-        url: "{{ gotenberg_molecule_base_url }}/version"
-        method: GET
-        status_code: [200]
-        follow_redirects: none
-        return_content: true
-      register: gotenberg_version_response
-
-    - name: Assert the running Gotenberg is the version this role installs
-      ansible.builtin.assert:
-        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
-        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
-        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
 
     # `docker container inspect` rather than `docker inspect`, which would happily fall back to the
     # container network of the same name and describe that instead when the container is gone.
