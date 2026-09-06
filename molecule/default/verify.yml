@@ -113,22 +113,24 @@
       changed_when: false
       register: gotenberg_container_raw
 
+    - name: Parse the Gotenberg container inspection
+      ansible.builtin.set_fact:
+        gotenberg_container: "{{ (gotenberg_container_raw.stdout | from_json)[0] }}"
+
     # The conversion checks further down are only meaningful while the container still runs under a
     # uid that has no /etc/passwd entry in the image and with a read-only root filesystem. Were a
     # future change to relax either of those, the Chromium regression this scenario guards would
     # stop being reachable and the suite would go on passing for the wrong reason.
     - name: Assert the Gotenberg container runs under the conditions that broke Chromium
-      vars:
-        gotenberg_molecule_container: "{{ (gotenberg_container_raw.stdout | from_json)[0] }}"
       ansible.builtin.assert:
         that:
-          - gotenberg_molecule_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
-          - gotenberg_molecule_container.HostConfig.ReadonlyRootfs | bool
+          - gotenberg_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
+          - gotenberg_container.HostConfig.ReadonlyRootfs | bool
         fail_msg: >-
           The container does not run with the uid override and read-only root filesystem that this
-          scenario relies on (user={{ gotenberg_molecule_container.Config.User }},
-          read-only={{ gotenberg_molecule_container.HostConfig.ReadonlyRootfs }}).
-        success_msg: "The container runs as {{ gotenberg_molecule_container.Config.User }} with a read-only root filesystem"
+          scenario relies on (user={{ gotenberg_container.Config.User }},
+          read-only={{ gotenberg_container.HostConfig.ReadonlyRootfs }}).
+        success_msg: "The container runs as {{ gotenberg_container.Config.User }} with a read-only root filesystem"
 
     - name: Read the environment of the Gotenberg process
       ansible.builtin.command:
