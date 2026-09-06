@@ -90,7 +90,7 @@
           about the role's process arguments.
         success_msg: "Only the role-configured root path serves the API"
 
-    - name: Retrieve the running Gotenberg version
+    - name: Query the version of the running Gotenberg
       ansible.builtin.uri:
         url: "{{ gotenberg_molecule_base_url }}/version"
         method: GET
