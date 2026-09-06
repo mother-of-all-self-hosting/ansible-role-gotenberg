@@ -111,7 +111,7 @@
       ansible.builtin.command:
         cmd: docker container inspect gotenberg
       changed_when: false
-      register: gotenberg_container_inspect
+      register: gotenberg_container_raw
 
     # The conversion checks further down are only meaningful while the container still runs under a
     # uid that has no /etc/passwd entry in the image and with a read-only root filesystem. Were a
@@ -119,7 +119,7 @@
     # stop being reachable and the suite would go on passing for the wrong reason.
     - name: Assert the Gotenberg container runs under the conditions that broke Chromium
       vars:
-        gotenberg_molecule_container: "{{ (gotenberg_container_inspect.stdout | from_json)[0] }}"
+        gotenberg_molecule_container: "{{ (gotenberg_container_raw.stdout | from_json)[0] }}"
       ansible.builtin.assert:
         that:
           - gotenberg_molecule_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
