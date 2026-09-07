@@ -69,6 +69,21 @@
         fail_msg: "Gotenberg reports itself as {{ gotenberg_health.json.status | default('unknown') }}"
         success_msg: "Gotenberg reports itself as up"
 
+    - name: Query the version of the running Gotenberg
+      ansible.builtin.uri:
+        url: "{{ gotenberg_molecule_base_url }}/version"
+        method: GET
+        status_code: [200]
+        follow_redirects: none
+        return_content: true
+      register: gotenberg_version_response
+
+    - name: Assert the running Gotenberg is the version this role installs
+      ansible.builtin.assert:
+        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
+        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
+        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
+
     # Negative control for the check above. Reaching the service under the prefix means little
     # unless the unprefixed route is gone, because that is what distinguishes a Gotenberg configured
     # by this role from a Gotenberg that ignored everything the role passed it.
@@ -90,45 +105,32 @@
           about the role's process arguments.
         success_msg: "Only the role-configured root path serves the API"
 
-    - name: Retrieve the running Gotenberg version
-      ansible.builtin.uri:
-        url: "{{ gotenberg_molecule_base_url }}/version"
-        method: GET
-        status_code: [200]
-        follow_redirects: none
-        return_content: true
-      register: gotenberg_version_response
-
-    - name: Assert the running Gotenberg is the version this role installs
-      ansible.builtin.assert:
-        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
-        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
-        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
-
     # `docker container inspect` rather than `docker inspect`, which would happily fall back to the
     # container network of the same name and describe that instead when the container is gone.
     - name: Inspect the Gotenberg container
       ansible.builtin.command:
         cmd: docker container inspect gotenberg
       changed_when: false
-      register: gotenberg_container_inspect
+      register: gotenberg_container_raw
+
+    - name: Parse the Gotenberg container inspection
+      ansible.builtin.set_fact:
+        gotenberg_container: "{{ (gotenberg_container_raw.stdout | from_json)[0] }}"
 
     # The conversion checks further down are only meaningful while the container still runs under a
     # uid that has no /etc/passwd entry in the image and with a read-only root filesystem. Were a
     # future change to relax either of those, the Chromium regression this scenario guards would
     # stop being reachable and the suite would go on passing for the wrong reason.
     - name: Assert the Gotenberg container runs under the conditions that broke Chromium
-      vars:
-        gotenberg_molecule_container: "{{ (gotenberg_container_inspect.stdout | from_json)[0] }}"
       ansible.builtin.assert:
         that:
-          - gotenberg_molecule_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
-          - gotenberg_molecule_container.HostConfig.ReadonlyRootfs | bool
+          - gotenberg_container.Config.User == (gotenberg_uid | string) + ':' + (gotenberg_gid | string)
+          - gotenberg_container.HostConfig.ReadonlyRootfs | bool
         fail_msg: >-
           The container does not run with the uid override and read-only root filesystem that this
-          scenario relies on (user={{ gotenberg_molecule_container.Config.User }},
-          read-only={{ gotenberg_molecule_container.HostConfig.ReadonlyRootfs }}).
-        success_msg: "The container runs as {{ gotenberg_molecule_container.Config.User }} with a read-only root filesystem"
+          scenario relies on (user={{ gotenberg_container.Config.User }},
+          read-only={{ gotenberg_container.HostConfig.ReadonlyRootfs }}).
+        success_msg: "The container runs as {{ gotenberg_container.Config.User }} with a read-only root filesystem"
 
     - name: Read the environment of the Gotenberg process
       ansible.builtin.command:
