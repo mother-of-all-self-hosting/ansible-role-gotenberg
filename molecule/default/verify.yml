@@ -80,13 +80,13 @@
         status_code: [200]
         follow_redirects: none
         return_content: true
-      register: gotenberg_version_response
+      register: gotenberg_version_reported
 
     - name: Assert the running Gotenberg is the version this role installs
       ansible.builtin.assert:
-        that: gotenberg_version_response.content | trim == gotenberg_defaults.gotenberg_version
-        fail_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
-        success_msg: "Gotenberg reports {{ gotenberg_version_response.content | trim }}"
+        that: gotenberg_version_reported.content | trim == gotenberg_defaults.gotenberg_version
+        fail_msg: "Gotenberg reports {{ gotenberg_version_reported.content | trim | default('none') }}, expected {{ gotenberg_defaults.gotenberg_version }}"
+        success_msg: "Gotenberg reports {{ gotenberg_version_reported.content | trim }}"
 
     # Negative control for the check above. Reaching the service under the prefix means little
     # unless the unprefixed route is gone, because that is what distinguishes a Gotenberg configured
@@ -234,7 +234,7 @@
       ansible.builtin.debug:
         msg:
           - "Gotenberg systemd: {{ gotenberg_service.status.ActiveState }}"
-          - "Gotenberg version: {{ gotenberg_version_response.content | trim }}"
+          - "Gotenberg version: {{ gotenberg_version_reported.content | trim }}"
           - "Gotenberg root path: only {{ gotenberg_molecule_base_url }} serves the API"
           - "Gotenberg environment: TZ={{ gotenberg_container_environment.stdout_lines[0] }} HOME={{ gotenberg_container_environment.stdout_lines[1] }}"
           - "Gotenberg Chromium PDF: {{ gotenberg_pdf_stat.results[0].stat.size }} bytes"
