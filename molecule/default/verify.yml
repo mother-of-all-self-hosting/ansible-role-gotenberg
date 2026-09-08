@@ -53,7 +53,7 @@
     - name: Retrieve the Gotenberg systemd service log for debugging
       when: gotenberg_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: journalctl -xeu gotenberg.service
+        cmd: journalctl --no-pager --output=cat --unit=gotenberg.service
       changed_when: false
 
     - name: Wait for Gotenberg HTTP endpoint to respond (up to 5m)
