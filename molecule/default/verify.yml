@@ -21,6 +21,9 @@
     gotenberg_molecule_base_url: "http://localhost:{{ gotenberg_container_http_port }}/mash-molecule"
     gotenberg_molecule_work_path: /tmp/gotenberg-molecule
 
+    gotenberg_verify_units:
+      - gotenberg.service
+
   tasks:
     - name: Verify that Gotenberg works
       block:
@@ -32,13 +35,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: gotenberg_defaults
 
-        - name: Wait for the Gotenberg systemd service to become active (up to 180s)
+        - name: Wait for the Gotenberg systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: gotenberg.service
-          register: gotenberg_service
-          until: gotenberg_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: gotenberg_services
+          until: gotenberg_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ gotenberg_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -46,17 +50,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Gotenberg systemd service is active
+        - name: Assert the Gotenberg systemd services are active
           ansible.builtin.assert:
-            that: gotenberg_service.status.ActiveState == 'active'
-            fail_msg: "gotenberg.service is not active ({{ gotenberg_service.status.ActiveState }})"
-            success_msg: "gotenberg.service is active"
+            that: gotenberg_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(gotenberg_verify_units | zip(gotenberg_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Gotenberg systemd service log for debugging
+        - name: Retrieve the Gotenberg systemd services log for debugging
           when: gotenberg_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=gotenberg.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ gotenberg_verify_units }}"
 
         - name: Wait for Gotenberg HTTP endpoint to respond (up to 5m)
           ansible.builtin.uri:
@@ -235,7 +242,7 @@
         - name: Show the Gotenberg verification summary
           ansible.builtin.debug:
             msg:
-              - "Gotenberg systemd: {{ gotenberg_service.status.ActiveState }}"
+              - "Gotenberg systemd: {% for unit, state in gotenberg_verify_units | zip(gotenberg_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Gotenberg version: {{ gotenberg_version_reported.content | trim }}"
               - "Gotenberg root path: only {{ gotenberg_molecule_base_url }} serves the API"
               - "Gotenberg environment: TZ={{ gotenberg_container_environment.stdout_lines[0] }} HOME={{ gotenberg_container_environment.stdout_lines[1] }}"
