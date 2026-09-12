@@ -65,7 +65,7 @@
           changed_when: false
           loop: "{{ gotenberg_verify_units }}"
 
-        - name: Wait for Gotenberg HTTP endpoint to respond (up to 5m)
+        - name: Wait for Gotenberg to report itself healthy (up to 180s)
           ansible.builtin.uri:
             url: "{{ gotenberg_molecule_base_url }}/health"  # cf. https://gotenberg.dev/docs/system/head-health-check
             method: GET
@@ -73,14 +73,17 @@
             follow_redirects: none
           register: gotenberg_health
           until: gotenberg_health.status == 200
-          retries: 60
+          retries: 36
           delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
-        - name: Assert Gotenberg reports itself as up
+        - name: Assert Gotenberg reports itself healthy
           ansible.builtin.assert:
             that: gotenberg_health.json.status == 'up'
-            fail_msg: "Gotenberg reports itself as {{ gotenberg_health.json.status | default('unknown') }}"
-            success_msg: "Gotenberg reports itself as up"
+            fail_msg: "Gotenberg did not report itself healthy: {{ gotenberg_health.json.status | default('no response') }}"
+            success_msg: "Gotenberg reports itself healthy"
 
         - name: Query the version of the running Gotenberg
           ansible.builtin.uri:
