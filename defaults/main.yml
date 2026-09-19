@@ -132,23 +132,11 @@ gotenberg_container_extra_arguments: "{{ gotenberg_container_extra_arguments_aut
 gotenberg_container_extra_arguments_auto: []
 gotenberg_container_extra_arguments_custom: []
 
-# The command that the container image is asked to run.
-#
-# Arguments passed to the container replace the image's own command (`CMD ["gotenberg"]`) rather
-# than being appended to it, so the command name has to be repeated in front of them. Without it,
-# the container exits immediately with:
-#
-#   [FATAL tini (7)] exec --some-argument failed: No such file or directory
-#
-# This value is only used when `gotenberg_process_extra_arguments` is non-empty; otherwise the
-# image's own command is left alone.
-gotenberg_container_command: gotenberg
-
-# A list of extra arguments to pass to the Gotenberg process
+# A list of extra arguments to pass to the process inside the container
 # Example: ['--SOME_ARGUMENT']
 gotenberg_process_extra_arguments: "{{ gotenberg_process_extra_arguments_auto + gotenberg_process_extra_arguments_custom }}"
 # Kept empty while `gotenberg_container_http_port` is at Gotenberg's own default, so that the usual
-# deployment leaves the image's command untouched. See `gotenberg_container_command`.
+# deployment leaves the image's command untouched.
 gotenberg_process_extra_arguments_auto: "{{ ['--api-port=' + (gotenberg_container_http_port | string)] if (gotenberg_container_http_port | int) != (gotenberg_container_http_port_upstream_default | int) else [] }}"
 gotenberg_process_extra_arguments_custom: []
 
