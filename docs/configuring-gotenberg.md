@@ -86,7 +86,7 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 After running the command for installation, Gotenberg becomes available internally to other services on the same network. If the service is exposed to the internet, it becomes available at the specified hostname like `https://example.com`.
 
-See [this page](https://gotenberg.dev/docs/convert-with-chromium/convert-url-to-pdf) on the documentation about its usage.
+Refer to [this page](https://gotenberg.dev/docs/convert-with-chromium/convert-url-to-pdf) on the documentation about its usage.
 
 ## Troubleshooting
 
