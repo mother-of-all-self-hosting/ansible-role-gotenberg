@@ -64,6 +64,12 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 **Note**: hosting Gotenberg under a subpath (by configuring the `gotenberg_path_prefix` variable) does not seem to be possible due to Gotenberg's technical limitations.
 
+### Integrating with Prometheus (optional)
+
+Gotenberg can natively expose metrics to Prometheus.
+
+If you are looking for an integration, you can check out the MASH playbook. Refer to [this section of the documentation on the playbook](https://github.com/mother-of-all-self-hosting/mash-playbook/blob/main/docs/services/gotenberg.md#integrating-with-prometheus-optional) for more information.
+
 ### Extending the configuration
 
 There are some additional things you may wish to configure about the service.

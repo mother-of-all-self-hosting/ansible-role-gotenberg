@@ -49,6 +49,11 @@ gotenberg_container_network_deletion_enabled: true
 # Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:2586"), or empty string to not expose.
 gotenberg_container_http_host_bind_port: ""
 
+# Specify how the metrics container publishes its HTTP port (as defined by `gotenberg_container_metrics_port`).
+#
+# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:2586"), or empty string to not expose.
+gotenberg_container_metrics_host_bind_port: ""
+
 # The port number in the container
 #
 # The role passes this on to the Gotenberg process (via `--api-port`, see
@@ -57,6 +62,9 @@ gotenberg_container_http_host_bind_port: ""
 # publishing at a port that nothing listens on.
 gotenberg_container_http_port: 3000
 gotenberg_container_http_port_upstream_default: 3000
+
+# The port number of the metrics server in the container
+gotenberg_container_metrics_port: "{{ gotenberg_container_http_port }}"
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
@@ -91,6 +99,21 @@ gotenberg_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 gotenberg_container_labels_traefik_middleware_basic_auth_enabled: false
 # See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
 gotenberg_container_labels_traefik_middleware_basic_auth_users: ""
+
+# Controls if labels are added to expose the Prometheus metrics publicly.
+gotenberg_container_labels_traefik_metrics_enabled: false
+gotenberg_container_labels_traefik_metrics_hostname: "{{ gotenberg_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/metrics`).
+gotenberg_container_labels_traefik_metrics_path_prefix: /metrics
+gotenberg_container_labels_traefik_metrics_rule: "Host(`{{ gotenberg_container_labels_traefik_metrics_hostname }}`){% if gotenberg_container_labels_traefik_metrics_path_prefix != '/' %} && PathPrefix(`{{ gotenberg_container_labels_traefik_metrics_path_prefix }}`){% endif %}"
+gotenberg_container_labels_traefik_metrics_priority: 0
+gotenberg_container_labels_traefik_metrics_entrypoints: "{{ gotenberg_container_labels_traefik_entrypoints }}"
+gotenberg_container_labels_traefik_metrics_middlewares: []
+gotenberg_container_labels_traefik_metrics_tls: "{{ gotenberg_container_labels_traefik_metrics_entrypoints != 'web' }}"
+gotenberg_container_labels_traefik_metrics_tls_certResolver: "{{ gotenberg_container_labels_traefik_tls_certResolver }}"  # noqa var-naming
+gotenberg_container_labels_traefik_metrics_middleware_basic_auth_enabled: false
+# See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
+gotenberg_container_labels_traefik_metrics_middleware_basic_auth_users: ""
 
 # Controls which additional headers to attach to all HTTP requests.
 # To add your own custom request headers, use `gotenberg_container_labels_traefik_additional_request_headers_custom`
