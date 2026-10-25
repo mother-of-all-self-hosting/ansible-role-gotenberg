@@ -66,9 +66,7 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 ### Integrating with Prometheus (optional)
 
-Gotenberg can natively expose metrics to Prometheus.
-
-If you are looking for an integration, you can check out the MASH playbook. Refer to [this section of the documentation on the playbook](https://github.com/mother-of-all-self-hosting/mash-playbook/blob/main/components/gotenberg/README.md#integrating-with-prometheus-optional) for more information.
+Gotenberg can natively expose metrics to Prometheus. If you are looking for an integration, you can check out the MASH Ansible playbook. Please refer to the service's documentation over there for more information.
 
 ### Extending the configuration
 
