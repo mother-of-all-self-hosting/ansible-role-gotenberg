@@ -280,6 +280,15 @@ gotenberg_environment_variables_tz: UTC
 # it is writable by `gotenberg_uid`.
 gotenberg_environment_variables_home: /tmp
 
+# Controls whether Chromium runs the JavaScript of the pages it converts (CHROMIUM_DISABLE_JAVASCRIPT).
+# See: https://gotenberg.dev/docs/configuration#chromium
+gotenberg_environment_variables_chromium_disable_javascript: false
+
+# A regular expression for the URLs which Chromium may access (CHROMIUM_ALLOW_LIST),
+# or an empty value for Gotenberg's default (all URLs).
+# See: https://gotenberg.dev/docs/configuration#chromium
+gotenberg_environment_variables_chromium_allow_list: ""
+
 # Additional environment variables.
 gotenberg_environment_variables_additional_variables: ""
 
