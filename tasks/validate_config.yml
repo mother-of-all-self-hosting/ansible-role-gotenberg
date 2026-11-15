@@ -23,8 +23,6 @@
     - gotenberg_uid
     - gotenberg_gid
     - gotenberg_container_network
-    # An empty value here would put a bare `HOME=` into the environment file, leaving Chromium
-    # without a writable home directory just as surely as not setting it at all would.
     - gotenberg_environment_variables_home
 
 - name: Run if Traefik is enabled
