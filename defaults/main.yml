@@ -289,6 +289,10 @@ gotenberg_environment_variables_chromium_disable_javascript: false
 # See: https://gotenberg.dev/docs/configuration#chromium
 gotenberg_environment_variables_chromium_allow_list: ""
 
+gotenberg_environment_variables_otel_metrics_exporter: ""
+
+gotenberg_environment_variables_otel_exporter_prometheus_host: 0.0.0.0
+
 # Additional environment variables.
 gotenberg_environment_variables_additional_variables: ""
 
