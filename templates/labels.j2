@@ -80,7 +80,7 @@ traefik.http.middlewares.{{ gotenberg_identifier }}-metrics-basic-auth.basicauth
 {% set middlewares = middlewares + [gotenberg_identifier + '-metrics-basic-auth'] %}
 {% endif %}
 
-traefik.http.middlewares.{{ gotenberg_identifier }}-metrics-replace-path.replacepath.path=/prometheus/metrics
+traefik.http.middlewares.{{ gotenberg_identifier }}-metrics-replace-path.replacepath.path=/metrics
 {% set middlewares = middlewares + [gotenberg_identifier + '-metrics-replace-path'] %}
 
 traefik.http.routers.{{ gotenberg_identifier }}-metrics.rule={{ gotenberg_container_labels_traefik_metrics_rule }}

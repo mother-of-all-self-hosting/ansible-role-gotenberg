@@ -64,7 +64,7 @@ gotenberg_container_http_port: 3000
 gotenberg_container_http_port_upstream_default: 3000
 
 # The port number of the metrics server in the container
-gotenberg_container_metrics_port: "{{ gotenberg_container_http_port }}"
+gotenberg_container_metrics_port: 9464
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
