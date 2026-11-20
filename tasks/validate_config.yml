@@ -22,7 +22,6 @@
   with_items:
     - gotenberg_uid
     - gotenberg_gid
-    - gotenberg_container_network
     - gotenberg_environment_variables_home
 
 - name: Run if Traefik is enabled
